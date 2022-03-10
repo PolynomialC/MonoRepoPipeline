@@ -1,0 +1,31 @@
+
+parameters:
+    name: 'BojanExample'
+    BuildConfiguration: 'Release'
+    BuildPlatform: 'any cpu'
+    solutionFolder: '--'
+    projectFile: '/Api/Api.csproj'
+    RestoreBuildProjects: '$(project.file)'    
+
+jobs:
+- job: ${{ parameters.name }}
+  dependsOn: Build_Queue
+  continueOnError: true
+  variables:
+    BuildConfiguration: ${{ parameters.BuildConfiguration }}
+    BuildPlatform: ${{ parameters.BuildPlatform }}
+    project.file: ${{ parameters.solutionFolder }}${{ parameters.projectFile }}
+    Parameters.RestoreBuildProjects: ${{ parameters.RestoreBuildProjects }}
+    myBuildQueue: $[ dependencies.Build_Queue.outputs['setBuildQueue.BuildQueue'] ]
+  condition: and(succeeded(), contains(dependencies.Build_Queue.outputs['setBuildQueue.BuildQueue'], '${{ parameters.solutionFolder }}'))
+  steps:
+  - task: powershell@2
+    inputs:
+      targetType: inline
+      script: 'Write-Host "Build Queue init: $(BUILDQUEUEINIT) and from parameters $(myBuildQueue)"'
+
+  - task: DotNetCoreCLI@2
+    displayName: Restore
+    inputs:
+      command: restore
+      projects: '$(Parameters.RestoreBuildProjects)'      
